@@ -111,7 +111,6 @@ session_to_node = {
 school_map = {
 
 # Parkeerplaatsen
-
     'Parkeerplaats 1 (Mobiliteitsproblemen)': {'HallwayC-0-2': {'Type': 'Hallway', 'Weight': 1}},
     'Parkeerplaats 2': {'MainHall': {'Type': 'Hallway', 'Weight': 1}},
     'Parkeerplaats 3': {'MainHall': {'Type': 'Hallway', 'Weight': 1}},
@@ -708,7 +707,7 @@ school_map = {
         'Openbaar vervoer ingang': {'Type': 'Hallway', 'Weight': 1},
 },
     'Canteen': {'MainHall': {'Type': 'Hallway', 'Weight': 1}},
-    'Safe': {'EmergencyExit0-B': {'Type': 'EmergencyExit', 'Weight': 1}},
+    'Safe': {'EmergencyExitB-0': {'Type': 'EmergencyExit', 'Weight': 1}},
 
 }
 
@@ -742,10 +741,15 @@ session_dropdowns = []
 session_label = tk.Label(mainframe, text="Select sessions:")
 session_label.grid(row=5, column=0, sticky=tk.W)
 
-# Dynamically add a dropdown for each available session
+# Dynamically add a label and a dropdown for each available session
 for i, session in enumerate(session_to_node.keys()):
+    # Create label for the session
+    session_name_label = tk.Label(mainframe, text=f"Session {i+1}:")
+    session_name_label.grid(row=6 + i * 2, column=0, pady=(10, 0), sticky=tk.W)
+
+    # Create a dropdown for the session
     dropdown = ttk.Combobox(mainframe, values=list(session_to_node.keys()))
-    dropdown.grid(row=6 + i, column=0, pady=(10, 0), sticky=(tk.W, tk.E))
+    dropdown.grid(row=7 + i * 2, column=0, pady=(10, 0), sticky=(tk.W, tk.E))
     session_dropdowns.append(dropdown)
 
 # Create result labels with text wrap
@@ -757,14 +761,14 @@ find_route_button = ttk.Button(mainframe, text="Start navigation through session
 
 # Arrange GUI elements in a grid
 is_disabled_checkbox.grid(row=0, column=0, columnspan=2, sticky=tk.W)
-is_emergency_checkbox.grid(row=1, column=0, columnspan=2, pady=(10, 0), sticky=tk.W)
+is_emergency_checkbox.grid(row=1, column=0, columnspan=2, sticky=tk.W)
 start_node_label.grid(row=2, column=0, sticky=tk.W)
 start_node_dropdown.grid(row=2, column=1, sticky=(tk.W, tk.E))
 end_node_label.grid(row=3, column=0, sticky=tk.W)
 end_node_dropdown.grid(row=3, column=1, sticky=(tk.W, tk.E))
 find_route_button.grid(row=4, column=0, columnspan=2, pady=(10, 0))
-result_label.grid(row=6 + len(session_dropdowns), column=0, columnspan=2, pady=(10, 0))
-path_label.grid(row=7 + len(session_dropdowns), column=0, columnspan=2, pady=(10, 0))
+result_label.grid(row=12 + len(session_dropdowns), column=0, columnspan=2, pady=(10, 0))
+path_label.grid(row=13 + len(session_dropdowns), column=0, columnspan=2, pady=(10, 0))
 
 # Run the Tkinter event loop
 root.mainloop()
