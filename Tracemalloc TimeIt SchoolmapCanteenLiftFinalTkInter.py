@@ -11,8 +11,9 @@ def find_route_through_sessions():
 
     # Create a list of selected sessions (nodes)
     selected_sessions = []
-    for session_name, session_var in session_vars.items():
-        if session_var.get():  # If the session is selected
+    for dropdown in session_dropdowns:
+        session_name = dropdown.get()
+        if session_name:  # If a session is selected
             selected_sessions.append(session_name)
 
     # If no sessions are selected, just find the route to the end node
@@ -109,11 +110,12 @@ session_to_node = {
 # Format: {node: {neighbor1: {'Type': type1, 'Weight': weight1}, neighbor2: {...}, ...}}
 school_map = {
 
-# # Sessies voor open dag
-#     'Workshop Algorithms': {'ClassroomB-3-107': {'Type': 'Hallway', 'Weight': 0}},
-#     'Workshop Machine Learning': {'ClassroomB-3-104': {'Type': 'Hallway', 'Weight': 0}},
-#     'Workshop Development': {'ClassroomB-3-217': {'Type': 'Hallway', 'Weight': 0}},
-#     'Lunchpauze 40 min': {'Canteen': {'Type': 'Hallway', 'Weight': 0}},
+# Parkeerplaatsen
+
+    'Parkeerplaats 1 (Mobiliteitsproblemen)': {'HallwayC-0-2': {'Type': 'Hallway', 'Weight': 1}},
+    'Parkeerplaats 2': {'MainHall': {'Type': 'Hallway', 'Weight': 1}},
+    'Parkeerplaats 3': {'MainHall': {'Type': 'Hallway', 'Weight': 1}},
+    'Openbaar vervoer ingang': {'MainHall': {'Type': 'Hallway', 'Weight': 1}},
 
 # Verdieping 3
 	'ClassroomB-3-221': {'HallwayB-3-1': {'Type': 'Hallway', 'Weight': 1}},
@@ -609,6 +611,7 @@ school_map = {
 		'StairsC-0-2': {'Type': 'Stairs', 'Weight': 2},
         'EmergencyExitC-3': {'Type': 'EmergencyExit', 'Weight': 2},
         'HallwayC-0-1': {'Type': 'Hallway', 'Weight': 3},
+        'Parkeerplaats 1 (Mobiliteitsproblemen)': {'Type': 'Hallway', 'Weight': 3},
 		'Lift': {'Type': 'Lift', 'Weight': 1},
 	},
 
@@ -700,6 +703,9 @@ school_map = {
 		'HallwayC-0-1': {'Type': 'Hallway', 'Weight': 1},
 		'HallwayC-0-2': {'Type': 'Hallway', 'Weight': 1},
 		'Canteen': {'Type': 'Hallway', 'Weight': 1},
+        'Parkeerplaats 2': {'Type': 'Hallway', 'Weight': 1},
+        'Parkeerplaats 3': {'Type': 'Hallway', 'Weight': 1},
+        'Openbaar vervoer ingang': {'Type': 'Hallway', 'Weight': 1},
 },
     'Canteen': {'MainHall': {'Type': 'Hallway', 'Weight': 1}},
     'Safe': {'EmergencyExit0-B': {'Type': 'EmergencyExit', 'Weight': 1}},
@@ -731,28 +737,20 @@ end_node_label = tk.Label(mainframe, text="Manual end location:")
 end_node_dropdown = ttk.Combobox(mainframe, textvariable=end_node_var)
 end_node_dropdown['values'] = tuple(school_map.keys())
 
-# Create session checkboxes
-session_vars = {
-    'Workshop Algorithms': tk.BooleanVar(),
-    'Workshop Machine Learning': tk.BooleanVar(),
-    'Workshop Development': tk.BooleanVar(),
-    'Lunchpauze 40 min': tk.BooleanVar(),
-}
+# Create session dropdowns dynamically based on the number of sessions available
+session_dropdowns = []
+session_label = tk.Label(mainframe, text="Select sessions:")
+session_label.grid(row=5, column=0, sticky=tk.W)
 
-# Add session checkboxes to the grid (4x4 grid in the GUI)
-row = 8
-col = 0
-for session_name, session_var in session_vars.items():
-    session_checkbox = tk.Checkbutton(mainframe, text=session_name, variable=session_var)
-    session_checkbox.grid(row=row, column=col, pady=(10, 0), sticky=tk.W)
-    col += 1
-    if col > 3:
-        col = 0
-        row += 1
+# Dynamically add a dropdown for each available session
+for i, session in enumerate(session_to_node.keys()):
+    dropdown = ttk.Combobox(mainframe, values=list(session_to_node.keys()))
+    dropdown.grid(row=6 + i, column=0, pady=(10, 0), sticky=(tk.W, tk.E))
+    session_dropdowns.append(dropdown)
 
-# Create result labels
-result_label = ttk.Label(mainframe, text="")
-path_label = ttk.Label(mainframe, text="")
+# Create result labels with text wrap
+result_label = ttk.Label(mainframe, text="", wraplength=300)
+path_label = ttk.Label(mainframe, text="", wraplength=300)
 
 # Button to trigger the navigation
 find_route_button = ttk.Button(mainframe, text="Start navigation through sessions", command=find_path)
@@ -765,8 +763,8 @@ start_node_dropdown.grid(row=2, column=1, sticky=(tk.W, tk.E))
 end_node_label.grid(row=3, column=0, sticky=tk.W)
 end_node_dropdown.grid(row=3, column=1, sticky=(tk.W, tk.E))
 find_route_button.grid(row=4, column=0, columnspan=2, pady=(10, 0))
-result_label.grid(row=5, column=0, columnspan=2, pady=(10, 0))
-path_label.grid(row=6, column=0, columnspan=2, pady=(10, 0))
+result_label.grid(row=6 + len(session_dropdowns), column=0, columnspan=2, pady=(10, 0))
+path_label.grid(row=7 + len(session_dropdowns), column=0, columnspan=2, pady=(10, 0))
 
 # Run the Tkinter event loop
 root.mainloop()
