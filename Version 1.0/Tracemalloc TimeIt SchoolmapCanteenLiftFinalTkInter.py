@@ -81,7 +81,7 @@ def find_path():
         end_node_dropdown.config(state="disabled")  # Disable the end node dropdown
     # Check if the Lunch Break checkbox is pressed
     elif is_lunch_break_var.get():
-        end_node = "Canteen"
+        end_node = "Kantine"
         end_node_var.set(end_node)
         end_node_dropdown.config(state="disabled")  # Disable the end node dropdown
     # If in emergency mode, set the end node to "Safe"
@@ -204,8 +204,8 @@ school_map = {
                   'Hallway3-C': {'Type': 'Lift', 'Weight': 1}},
     'MainHall': {'Hallway0-B': {'Type': 'Hallway', 'Weight': 1},
                   'Hallway0-C': {'Type': 'Hallway', 'Weight': 1},
-                  'Canteen': {'Type': 'Hallway', 'Weight': 1}},
-    'Canteen': {'MainHall': {'Type': 'Hallway', 'Weight': 1}},
+                  'Kantine': {'Type': 'Hallway', 'Weight': 1}},
+    'Kantine': {'MainHall': {'Type': 'Hallway', 'Weight': 1}},
     'Safe': {'EmergencyExit0-B': {'Type': 'EmergencyExit', 'Weight': 1}}
 }
 

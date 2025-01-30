@@ -96,8 +96,8 @@ school_map = {
                   'Hallway3-C': {'Type': 'Lift', 'Weight': 1}},
     'MainHall': {'Hallway0-B': {'Type': 'Hallway', 'Weight': 1},
                   'Hallway0-C': {'Type': 'Hallway', 'Weight': 1},
-                  'Canteen': {'Type': 'Hallway', 'Weight': 1}},
-    'Canteen': {'MainHall': {'Type': 'Hallway', 'Weight': 1}},
+                  'Kantine': {'Type': 'Hallway', 'Weight': 1}},
+    'Kantine': {'MainHall': {'Type': 'Hallway', 'Weight': 1}},
     'Safe': {'EmergencyExit0-B': {'Type': 'EmergencyExit', 'Weight': 1}}
 }
 

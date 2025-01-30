@@ -133,8 +133,8 @@ school_map = {
                   'Hallway3-C': {'Type': 'Lift', 'Weight': 1}},
     'MainHall': {'Hallway0-B': {'Type': 'Hallway', 'Weight': 1},
                   'Hallway0-C': {'Type': 'Hallway', 'Weight': 1},
-                  'Canteen': {'Type': 'Hallway', 'Weight': 1}},
-    'Canteen': {'MainHall': {'Type': 'Hallway', 'Weight': 1}}
+                  'Kantine': {'Type': 'Hallway', 'Weight': 1}},
+    'Kantine': {'MainHall': {'Type': 'Hallway', 'Weight': 1}}
 }
 
 ## Add floor information to classrooms
@@ -176,7 +176,7 @@ floors = {
     'Lift': 2,
     'Lift': 3,
     'MainHall': 0,
-    'Canteen': 0
+    'Kantine': 0
 }
 
 # Specify whether the user is disabled or able

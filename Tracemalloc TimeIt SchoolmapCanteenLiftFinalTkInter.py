@@ -43,7 +43,7 @@ def find_route_through_sessions():
     total_distance += distance
     total_path.extend(path)
 
-    # Multiply the distance by 7 and display the result
+    # Multiply the distance by 7 (the map is based on the floor plan blocks, which are 7 meters by 7 meters) and display the result
     distance_in_meters = total_distance * 7
 
     # Update the GUI with the result
@@ -160,102 +160,12 @@ def dijkstra(graph, start, end, is_disabled=False, is_emergency=False):
 
     return float('infinity'), []
 
-def find_path():
-    # start measuring time and memory
-    start_time = timeit.default_timer()
-    tracemalloc.start()
-
-    # Variabelen ophalen
-    start_node = start_node_var.get()
-    end_node = end_node_var.get()
-    is_disabled_user = is_disabled_var.get()
-    is_emergency_user = is_emergency_var.get()
-
-    # Emergency-modus
-    if is_emergency_user:
-        end_node = "Safe"
-        end_node_var.set(end_node)
-        end_node_dropdown.config(state="disabled")  # Disable the end node dropdown
-    else:
-        end_node_dropdown.config(state="normal")  # Enable the end node dropdown
-
-    # Sessions-check
-    if session_dropdowns:
-        find_route_through_sessions()
-        return
-
-    # Bereken het kortste pad
-    shortest_distance, path = dijkstra(school_map, start_node, end_node, is_disabled=is_disabled_user, is_emergency=is_emergency_user)
-    distance_in_meters = shortest_distance * 7
-
-    # Stop measuring time
-    elapsed_time = timeit.default_timer() - start_time
-
-    # Stop tracing memory
-    _, peak_memory = tracemalloc.get_traced_memory()
-    tracemalloc.stop()
-    elapsed_time = timeit.default_timer() - start_time
-    print(f"Elapsed Time: {elapsed_time:.6f} seconds")  # Debug
-    print(f"Peak Memory Usage: {peak_memory / 1024:.2f} KiB")
-
-    # Labels updaten
-    result_label.config(text=f"Shortest Distance: {distance_in_meters} meters")
-    path_label.config(text=f"Shortest Path: {path}")
-    time_label.config(text=f"Elapsed Time: {elapsed_time:.6f} seconds")
-    memory_label.config(text=f"Peak Memory Usage: {peak_memory / 1024:.2f} KiB")
-    root.update_idletasks()  # Force GUI update
-
-# Dijkstra's algorithm to calculate shortest path
-def dijkstra(graph, start, end, is_disabled=False, is_emergency=False):
-    priority_queue = [(0, start)]
-    distances = {node: float('infinity') for node in graph}
-    distances[start] = 0
-    previous = {node: None for node in graph}
-
-    while priority_queue:
-        current_distance, current_node = heapq.heappop(priority_queue)
-
-        if current_node == end:
-            path = []
-            while current_node is not None:
-                path.insert(0, current_node)
-                current_node = previous[current_node]
-            return current_distance, path
-
-        if current_distance > distances[current_node]:
-            continue
-
-        for neighbor in graph[current_node]:
-            distance = current_distance + graph[current_node][neighbor].get('Weight', 0)
-
-            # Check if the user is disabled and if there is a lift available
-            if is_disabled and graph[current_node][neighbor].get('Type', '') == 'Stairs':
-                continue
-            elif not is_disabled and graph[current_node][neighbor].get('Type', '') == 'Lift':
-                if distances[current_node] > distances[neighbor] or (not is_emergency and not graph[current_node][neighbor].get('Emergency', False)):
-                    continue
-            elif graph[current_node][neighbor].get('Type', '') == 'Safe':
-                if not is_emergency:
-                    continue
-            elif graph[current_node][neighbor].get('Type', '') == 'EmergencyExit':
-                if not is_emergency:
-                    continue
-            else:
-                distance += graph[current_node][neighbor].get('Weight', 0)
-
-            if distance < distances[neighbor]:
-                distances[neighbor] = distance
-                previous[neighbor] = current_node
-                heapq.heappush(priority_queue, (distance, neighbor))
-
-    return float('infinity'), []
-
 # Define the mapping between sessions and their nodes
 session_to_node = {
     'Workshop Algorithms': 'ClassroomB-3-107',
     'Workshop Machine Learning': 'ClassroomB-3-104',
     'Workshop Development': 'ClassroomB-3-217',
-    'Lunchpauze 40 min': 'Canteen',
+    'Lunchpauze 40 min': 'Kantine',
     # Add other sessions as needed
 }
 
@@ -267,7 +177,7 @@ school_map = {
     'Parkeerplaats 1 (Mobiliteitsproblemen)': {'HallwayC-0-2': {'Type': 'Hallway', 'Weight': 1}},
     'Parkeerplaats 2': {'MainHall': {'Type': 'Hallway', 'Weight': 1}},
     'Parkeerplaats 3': {'MainHall': {'Type': 'Hallway', 'Weight': 1}},
-    'Openbaar vervoer ingang': {'MainHall': {'Type': 'Hallway', 'Weight': 1}},
+    'Openbaar vervoer en fietsenstalling ingang': {'MainHall': {'Type': 'Hallway', 'Weight': 1}},
 
 # Verdieping 3
 	'ClassroomB-3-221': {'HallwayB-3-1': {'Type': 'Hallway', 'Weight': 1}},
@@ -854,12 +764,12 @@ school_map = {
     'MainHall': {
 		'HallwayC-0-1': {'Type': 'Hallway', 'Weight': 1},
 		'HallwayC-0-2': {'Type': 'Hallway', 'Weight': 1},
-		'Canteen': {'Type': 'Hallway', 'Weight': 1},
+		'Kantine': {'Type': 'Hallway', 'Weight': 1},
         'Parkeerplaats 2': {'Type': 'Hallway', 'Weight': 1},
         'Parkeerplaats 3': {'Type': 'Hallway', 'Weight': 1},
-        'Openbaar vervoer ingang': {'Type': 'Hallway', 'Weight': 1},
-},
-    'Canteen': {'MainHall': {'Type': 'Hallway', 'Weight': 1}},
+        'Openbaar vervoer en fietsenstalling ingang': {'Type': 'Hallway', 'Weight': 1},
+    },
+    'Kantine': {'MainHall': {'Type': 'Hallway', 'Weight': 1}},
     'Safe': {'EmergencyExitB-0': {'Type': 'EmergencyExit', 'Weight': 1}},
 
 }

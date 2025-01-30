@@ -47,8 +47,8 @@ school_map = {
     'Stairs3': [('Hallway', 1), ('Stairs2', 1)],
     'Stairs2': [('Stairs3', 1), ('Stairs1', 1)],
     'Stairs1': [('Stairs2', 1), ('MainHall', 1)],
-    'MainHall': [('Stairs1', 1), ('Canteen', 1)],
-    'Canteen': [('MainHall', 1)]
+    'MainHall': [('Stairs1', 1), ('Kantine', 1)],
+    'Kantine': [('MainHall', 1)]
 }
 
 # Add floor information to classrooms
@@ -66,16 +66,16 @@ classroom_floors = {
     'Stairs2': 2,
     'Stairs1': 1,
     'MainHall': 1,
-    'Canteen': 1
+    'Kantine': 1
 }
 
-# Find the shortest path from a classroom to the canteen
+# Find the shortest path from a classroom to the Kantine
 start_classroom = 'Classroom1'  # Replace with the actual starting classroom
-end_canteen = 'Canteen'
+end_Kantine = 'Kantine'
 
-shortest_distance = dijkstra(school_map, start_classroom, end_canteen)
+shortest_distance = dijkstra(school_map, start_classroom, end_Kantine)
 
 if shortest_distance == float('infinity'):
-    print(f"There is no path from {start_classroom} to {end_canteen}.")
+    print(f"There is no path from {start_classroom} to {end_Kantine}.")
 else:
-    print(f"The shortest distance from {start_classroom} to {end_canteen} is {shortest_distance} units.")
+    print(f"The shortest distance from {start_classroom} to {end_Kantine} is {shortest_distance} units.")
