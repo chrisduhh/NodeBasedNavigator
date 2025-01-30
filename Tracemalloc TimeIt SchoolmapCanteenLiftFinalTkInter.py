@@ -1,25 +1,67 @@
 import tkinter as tk
 from tkinter import ttk
 import heapq
-import timeit
-import tracemalloc
 
+# Function to handle multiple selected sessions and find the route
+def find_route_through_sessions():
+    start_node = start_node_var.get()
+    end_node = end_node_var.get()
+    is_disabled_user = is_disabled_var.get()
+    is_emergency_user = is_emergency_var.get()
+
+    # Create a list of selected sessions (nodes)
+    selected_sessions = []
+    for session_name, session_var in session_vars.items():
+        if session_var.get():  # If the session is selected
+            selected_sessions.append(session_name)
+
+    # If no sessions are selected, just find the route to the end node
+    if not selected_sessions:
+        selected_sessions = [end_node]
+
+    # Calculate the route: start -> selected sessions -> end -> start
+    total_path = []
+    total_distance = 0
+
+    # Find the route from start to the first selected session
+    current_start = start_node
+    for session in selected_sessions:
+        session_node = session_to_node.get(session)  # Get the actual node for the session
+        if session_node is None:
+            continue  # Skip if no node is associated with the session
+
+        distance, path = dijkstra(school_map, current_start, session_node, is_disabled=is_disabled_user, is_emergency=is_emergency_user)
+        total_distance += distance
+        total_path.extend(path[:-1])  # Exclude the current session as it's the next start
+        current_start = session_node
+
+    # Finally, find the route from the last session to the end node
+    distance, path = dijkstra(school_map, current_start, end_node, is_disabled=is_disabled_user, is_emergency=is_emergency_user)
+    total_distance += distance
+    total_path.extend(path)
+
+    # Multiply the distance by 7 and display the result
+    distance_in_meters = total_distance * 7
+
+    # Update the GUI with the result
+    result_label.config(text=f"Shortest Distance: {distance_in_meters} meters")
+    path_label.config(text=f"Shortest Path: {total_path}")
+
+# Function to handle the button click
+def find_path():
+    find_route_through_sessions()
+
+# Dijkstra's algorithm to calculate shortest path
 def dijkstra(graph, start, end, is_disabled=False, is_emergency=False):
-    # Priority queue to store nodes with their tentative distances
     priority_queue = [(0, start)]
-    
-    # Dictionary to store tentative distances
     distances = {node: float('infinity') for node in graph}
     distances[start] = 0
-    
-    # Dictionary to store the previous node in the shortest path
     previous = {node: None for node in graph}
-    
+
     while priority_queue:
         current_distance, current_node = heapq.heappop(priority_queue)
 
         if current_node == end:
-            # Reached the destination, reconstruct the path
             path = []
             while current_node is not None:
                 path.insert(0, current_node)
@@ -27,7 +69,6 @@ def dijkstra(graph, start, end, is_disabled=False, is_emergency=False):
             return current_distance, path
 
         if current_distance > distances[current_node]:
-            # Skip if the current distance is greater than the known distance
             continue
 
         for neighbor in graph[current_node]:
@@ -35,83 +76,44 @@ def dijkstra(graph, start, end, is_disabled=False, is_emergency=False):
 
             # Check if the user is disabled and if there is a lift available
             if is_disabled and graph[current_node][neighbor].get('Type', '') == 'Stairs':
-                # Skip stairs if the user is disabled
                 continue
             elif not is_disabled and graph[current_node][neighbor].get('Type', '') == 'Lift':
-                # Skip lift if it's on the same or lower floor or not in emergency mode
                 if distances[current_node] > distances[neighbor] or (not is_emergency and not graph[current_node][neighbor].get('Emergency', False)):
                     continue
             elif graph[current_node][neighbor].get('Type', '') == 'Safe':
-                # Skip safe room if not in emergency mode
                 if not is_emergency:
                     continue
             elif graph[current_node][neighbor].get('Type', '') == 'EmergencyExit':
-                # Skip emergency exit if not in emergency mode
                 if not is_emergency:
                     continue
             else:
-                distance += graph[current_node][neighbor].get('Weight', 0)  # No adjustment needed for non-stairs/non-lift nodes
+                distance += graph[current_node][neighbor].get('Weight', 0)
 
             if distance < distances[neighbor]:
-                # Update the tentative distance and previous node
                 distances[neighbor] = distance
                 previous[neighbor] = current_node
                 heapq.heappush(priority_queue, (distance, neighbor))
 
-    # If no path is found
     return float('infinity'), []
 
-# Function to find the path and update the GUI
-def find_path():
-    # Start measuring time
-    start_time = timeit.default_timer()
-
-    # Start tracing memory
-    tracemalloc.start()
-
-    start_node = start_node_var.get()
-    end_node = end_node_var.get()
-    is_disabled_user = is_disabled_var.get()
-    is_emergency_user = is_emergency_var.get()
-
-    # Check if the Coffee Break checkbox is pressed
-    if is_coffee_break_var.get():
-        end_node = "HallwayB-3-3"
-        end_node_var.set(end_node)
-        end_node_dropdown.config(state="disabled")  # Disable the end node dropdown
-    # Check if the Lunch Break checkbox is pressed
-    elif is_lunch_break_var.get():
-        end_node = "Canteen"
-        end_node_var.set(end_node)
-        end_node_dropdown.config(state="disabled")  # Disable the end node dropdown
-    # If in emergency mode, set the end node to "Safe"
-    elif is_emergency_user:
-        end_node = "Safe"
-        end_node_var.set(end_node)
-        end_node_dropdown.config(state="disabled")  # Disable the end node dropdown
-    else:
-        end_node = end_node_var.get()
-        end_node_dropdown.config(state="normal")  # Enable the end node dropdown
-
-    shortest_distance, path = dijkstra(school_map, start_node, end_node, is_disabled=is_disabled_user, is_emergency=is_emergency_user)
-    distance_in_meters = shortest_distance * 7
-
-    # Stop measuring time
-    elapsed_time = timeit.default_timer() - start_time
-
-    # Stop tracing memory
-    _, peak_memory = tracemalloc.get_traced_memory()
-    tracemalloc.stop()
-
-    # Display the result along with time and memory information
-    result_label.config(text=f"Shortest Distance: {distance_in_meters} meters")
-    path_label.config(text=f"Shortest Path: {path}")
-    time_label.config(text=f"Elapsed Time: {elapsed_time:.6f} seconds")
-    memory_label.config(text=f"Peak Memory Usage: {peak_memory / 1024:.2f} KiB")
+# Define the mapping between sessions and their nodes
+session_to_node = {
+    'Workshop Algorithms': 'ClassroomB-3-107',
+    'Workshop Machine Learning': 'ClassroomB-3-104',
+    'Workshop Development': 'ClassroomB-3-217',
+    'Lunchpauze 40 min': 'Canteen',
+    # Add other sessions as needed
+}
 
 # Updated example graph representation with floor information, divisions, and corrected connections
 # Format: {node: {neighbor1: {'Type': type1, 'Weight': weight1}, neighbor2: {...}, ...}}
 school_map = {
+
+# # Sessies voor open dag
+#     'Workshop Algorithms': {'ClassroomB-3-107': {'Type': 'Hallway', 'Weight': 0}},
+#     'Workshop Machine Learning': {'ClassroomB-3-104': {'Type': 'Hallway', 'Weight': 0}},
+#     'Workshop Development': {'ClassroomB-3-217': {'Type': 'Hallway', 'Weight': 0}},
+#     'Lunchpauze 40 min': {'Canteen': {'Type': 'Hallway', 'Weight': 0}},
 
 # Verdieping 3
 	'ClassroomB-3-221': {'HallwayB-3-1': {'Type': 'Hallway', 'Weight': 1}},
@@ -146,7 +148,7 @@ school_map = {
 	'ClassroomB-3-105': {'HallwayB-3-3': {'Type': 'Hallway', 'Weight': 2}},
 	'ClassroomB-3-107': {'HallwayB-3-3': {'Type': 'Hallway', 'Weight': 3}},
     'ClassroomB-3-104': {'HallwayB-3-3': {'Type': 'Hallway', 'Weight': 3}},
-	'ClassroomB-3-106': {'HallwayB-3-3': {'Type': 'Hallway', 'Weight': 3}},
+    'ClassroomB-3-106': {'HallwayB-3-3': {'Type': 'Hallway', 'Weight': 3}},
 	'ClassroomB-3-108': {'HallwayB-3-3': {'Type': 'Hallway', 'Weight': 3}},
 	'ClassroomB-3-110': {'HallwayB-3-3': {'Type': 'Hallway', 'Weight': 4}},
 	'ClassroomB-3-111': {'HallwayB-3-3': {'Type': 'Hallway', 'Weight': 5}},
@@ -715,43 +717,56 @@ mainframe.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
 # Variables for GUI elements
 is_disabled_var = tk.BooleanVar()
 is_emergency_var = tk.BooleanVar()
-is_coffee_break_var = tk.BooleanVar()
-is_lunch_break_var = tk.BooleanVar()
 start_node_var = tk.StringVar()
 end_node_var = tk.StringVar()
 
 # Create GUI elements
 is_disabled_checkbox = tk.Checkbutton(mainframe, text="Mobiliteitsproblemen", variable=is_disabled_var)
 is_emergency_checkbox = tk.Checkbutton(mainframe, text="Emergency", variable=is_emergency_var)
-coffee_break_checkbox = tk.Checkbutton(mainframe, text="Coffee Break", variable=is_coffee_break_var)
-lunch_break_checkbox = tk.Checkbutton(mainframe, text="12:00 - 13:00 Lunch Break", variable=is_lunch_break_var)
+
 start_node_label = tk.Label(mainframe, text="Current location:")
 start_node_dropdown = ttk.Combobox(mainframe, textvariable=start_node_var)
 start_node_dropdown['values'] = tuple(school_map.keys())
 end_node_label = tk.Label(mainframe, text="Manual end location:")
 end_node_dropdown = ttk.Combobox(mainframe, textvariable=end_node_var)
 end_node_dropdown['values'] = tuple(school_map.keys())
-find_path_button = ttk.Button(mainframe, text="Start navigation", command=find_path)
+
+# Create session checkboxes
+session_vars = {
+    'Workshop Algorithms': tk.BooleanVar(),
+    'Workshop Machine Learning': tk.BooleanVar(),
+    'Workshop Development': tk.BooleanVar(),
+    'Lunchpauze 40 min': tk.BooleanVar(),
+}
+
+# Add session checkboxes to the grid (4x4 grid in the GUI)
+row = 8
+col = 0
+for session_name, session_var in session_vars.items():
+    session_checkbox = tk.Checkbutton(mainframe, text=session_name, variable=session_var)
+    session_checkbox.grid(row=row, column=col, pady=(10, 0), sticky=tk.W)
+    col += 1
+    if col > 3:
+        col = 0
+        row += 1
+
+# Create result labels
 result_label = ttk.Label(mainframe, text="")
 path_label = ttk.Label(mainframe, text="")
-time_label = ttk.Label(mainframe, text="")
-memory_label = ttk.Label(mainframe, text="")
 
+# Button to trigger the navigation
+find_route_button = ttk.Button(mainframe, text="Start navigation through sessions", command=find_path)
 
 # Arrange GUI elements in a grid
 is_disabled_checkbox.grid(row=0, column=0, columnspan=2, sticky=tk.W)
-is_emergency_checkbox.grid(row=8, column=0, columnspan=2, pady=(10, 0), sticky=tk.W)
-coffee_break_checkbox.grid(row=9, column=0, columnspan=2, pady=(10, 0), sticky=tk.W)
-lunch_break_checkbox.grid(row=10, column=0, columnspan=2, pady=(10, 0), sticky=tk.W)
-start_node_label.grid(row=1, column=0, sticky=tk.W)
-start_node_dropdown.grid(row=1, column=1, sticky=(tk.W, tk.E))
-end_node_label.grid(row=2, column=0, sticky=tk.W)
-end_node_dropdown.grid(row=2, column=1, sticky=(tk.W, tk.E))
-find_path_button.grid(row=3, column=0, columnspan=2, pady=(10, 0))
-result_label.grid(row=4, column=0, columnspan=2, pady=(10, 0))
-path_label.grid(row=5, column=0, columnspan=2, pady=(10, 0))
-time_label.grid(row=6, column=0, columnspan=2, pady=(10, 0))
-memory_label.grid(row=7, column=0, columnspan=2, pady=(10, 0))
+is_emergency_checkbox.grid(row=1, column=0, columnspan=2, pady=(10, 0), sticky=tk.W)
+start_node_label.grid(row=2, column=0, sticky=tk.W)
+start_node_dropdown.grid(row=2, column=1, sticky=(tk.W, tk.E))
+end_node_label.grid(row=3, column=0, sticky=tk.W)
+end_node_dropdown.grid(row=3, column=1, sticky=(tk.W, tk.E))
+find_route_button.grid(row=4, column=0, columnspan=2, pady=(10, 0))
+result_label.grid(row=5, column=0, columnspan=2, pady=(10, 0))
+path_label.grid(row=6, column=0, columnspan=2, pady=(10, 0))
 
 # Run the Tkinter event loop
 root.mainloop()
