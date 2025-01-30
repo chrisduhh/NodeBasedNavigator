@@ -1,6 +1,8 @@
 import tkinter as tk
 from tkinter import ttk
 import heapq
+import timeit
+import tracemalloc
 
 # Function to handle multiple selected sessions and find the route
 def find_route_through_sessions():
@@ -48,9 +50,160 @@ def find_route_through_sessions():
     result_label.config(text=f"Shortest Distance: {distance_in_meters} meters")
     path_label.config(text=f"Shortest Path: {total_path}")
 
-# Function to handle the button click
 def find_path():
-    find_route_through_sessions()
+    try:
+        print("Starting find_path function.")  # Debug: start van de functie
+
+        # Start measuring time
+        start_time = timeit.default_timer()
+
+        # Start tracing memory
+        tracemalloc.start()
+
+        # Debug: na tracemalloc en timeit start
+        print("Timers and memory tracking started.")
+
+        # Variabelen ophalen
+        start_node = start_node_var.get()
+        end_node = end_node_var.get()
+        is_disabled_user = is_disabled_var.get()
+        is_emergency_user = is_emergency_var.get()
+        print(f"Start Node: {start_node}, End Node: {end_node}, Disabled: {is_disabled_user}, Emergency: {is_emergency_user}")
+
+        # Emergency-modus
+        if is_emergency_user:
+            end_node = "Safe"
+            end_node_var.set(end_node)
+            end_node_dropdown.config(state="disabled")  # Disable the end node dropdown
+            print("Emergency mode enabled. End node set to 'Safe'.")
+        else:
+            end_node_dropdown.config(state="normal")  # Enable the end node dropdown
+            print("Normal mode enabled.")
+
+        # Sessions-check
+        if session_dropdowns:
+            print("Session dropdowns detected. Calculating session route.")
+            find_route_through_sessions()
+        else:
+            print("No session dropdowns. Calculating direct route.")
+            shortest_distance, path = dijkstra(
+                school_map, start_node, end_node,
+                is_disabled=is_disabled_user, is_emergency=is_emergency_user
+            )
+            print(f"Shortest Distance: {shortest_distance}, Path: {path}")
+            distance_in_meters = shortest_distance * 7
+
+            # Update result labels
+            result_label.config(text=f"Shortest Distance: {distance_in_meters} meters")
+            path_label.config(text=f"Shortest Path: {path}")
+
+        # Stop measuring time
+        elapsed_time = timeit.default_timer() - start_time
+
+        # Stop tracing memory
+        _, peak_memory = tracemalloc.get_traced_memory()
+        tracemalloc.stop()
+
+        print(f"Elapsed Time: {elapsed_time:.6f} seconds")  # Debug: tijd
+        print(f"Peak Memory Usage: {peak_memory / 1024:.2f} KiB")  # Debug: geheugen
+
+        # Update time and memory labels
+        time_label.config(text=f"Elapsed Time: {elapsed_time:.6f} seconds")
+        memory_label.config(text=f"Peak Memory Usage: {peak_memory / 1024:.2f} KiB")
+        root.update()
+
+    except Exception as e:
+        print(f"Error in find_path: {e}")  # Log de fout
+
+# Dijkstra's algorithm to calculate shortest path
+def dijkstra(graph, start, end, is_disabled=False, is_emergency=False):
+    priority_queue = [(0, start)]
+    distances = {node: float('infinity') for node in graph}
+    distances[start] = 0
+    previous = {node: None for node in graph}
+
+    while priority_queue:
+        current_distance, current_node = heapq.heappop(priority_queue)
+
+        if current_node == end:
+            path = []
+            while current_node is not None:
+                path.insert(0, current_node)
+                current_node = previous[current_node]
+            return current_distance, path
+
+        if current_distance > distances[current_node]:
+            continue
+
+        for neighbor in graph[current_node]:
+            distance = current_distance + graph[current_node][neighbor].get('Weight', 0)
+
+            # Check if the user is disabled and if there is a lift available
+            if is_disabled and graph[current_node][neighbor].get('Type', '') == 'Stairs':
+                continue
+            elif not is_disabled and graph[current_node][neighbor].get('Type', '') == 'Lift':
+                if distances[current_node] > distances[neighbor] or (not is_emergency and not graph[current_node][neighbor].get('Emergency', False)):
+                    continue
+            elif graph[current_node][neighbor].get('Type', '') == 'Safe':
+                if not is_emergency:
+                    continue
+            elif graph[current_node][neighbor].get('Type', '') == 'EmergencyExit':
+                if not is_emergency:
+                    continue
+            else:
+                distance += graph[current_node][neighbor].get('Weight', 0)
+
+            if distance < distances[neighbor]:
+                distances[neighbor] = distance
+                previous[neighbor] = current_node
+                heapq.heappush(priority_queue, (distance, neighbor))
+
+    return float('infinity'), []
+
+def find_path():
+    # start measuring time and memory
+    start_time = timeit.default_timer()
+    tracemalloc.start()
+
+    # Variabelen ophalen
+    start_node = start_node_var.get()
+    end_node = end_node_var.get()
+    is_disabled_user = is_disabled_var.get()
+    is_emergency_user = is_emergency_var.get()
+
+    # Emergency-modus
+    if is_emergency_user:
+        end_node = "Safe"
+        end_node_var.set(end_node)
+        end_node_dropdown.config(state="disabled")  # Disable the end node dropdown
+    else:
+        end_node_dropdown.config(state="normal")  # Enable the end node dropdown
+
+    # Sessions-check
+    if session_dropdowns:
+        find_route_through_sessions()
+        return
+
+    # Bereken het kortste pad
+    shortest_distance, path = dijkstra(school_map, start_node, end_node, is_disabled=is_disabled_user, is_emergency=is_emergency_user)
+    distance_in_meters = shortest_distance * 7
+
+    # Stop measuring time
+    elapsed_time = timeit.default_timer() - start_time
+
+    # Stop tracing memory
+    _, peak_memory = tracemalloc.get_traced_memory()
+    tracemalloc.stop()
+    elapsed_time = timeit.default_timer() - start_time
+    print(f"Elapsed Time: {elapsed_time:.6f} seconds")  # Debug
+    print(f"Peak Memory Usage: {peak_memory / 1024:.2f} KiB")
+
+    # Labels updaten
+    result_label.config(text=f"Shortest Distance: {distance_in_meters} meters")
+    path_label.config(text=f"Shortest Path: {path}")
+    time_label.config(text=f"Elapsed Time: {elapsed_time:.6f} seconds")
+    memory_label.config(text=f"Peak Memory Usage: {peak_memory / 1024:.2f} KiB")
+    root.update_idletasks()  # Force GUI update
 
 # Dijkstra's algorithm to calculate shortest path
 def dijkstra(graph, start, end, is_disabled=False, is_emergency=False):
@@ -711,6 +864,7 @@ school_map = {
 
 }
 
+
 # Create the main Tkinter window
 root = tk.Tk()
 root.title("School Map Navigation")
@@ -736,25 +890,24 @@ end_node_label = tk.Label(mainframe, text="Manual end location:")
 end_node_dropdown = ttk.Combobox(mainframe, textvariable=end_node_var)
 end_node_dropdown['values'] = tuple(school_map.keys())
 
-# Create session dropdowns dynamically based on the number of sessions available
+# Create session dropdowns dynamically
 session_dropdowns = []
 session_label = tk.Label(mainframe, text="Select sessions:")
 session_label.grid(row=5, column=0, sticky=tk.W)
 
-# Dynamically add a label and a dropdown for each available session
 for i, session in enumerate(session_to_node.keys()):
-    # Create label for the session
     session_name_label = tk.Label(mainframe, text=f"Session {i+1}:")
-    session_name_label.grid(row=6 + i * 2, column=0, pady=(10, 0), sticky=tk.W)
+    session_name_label.grid(row=6 + i, column=0, pady=(5, 0), sticky=tk.W)
 
-    # Create a dropdown for the session
     dropdown = ttk.Combobox(mainframe, values=list(session_to_node.keys()))
-    dropdown.grid(row=7 + i * 2, column=0, pady=(10, 0), sticky=(tk.W, tk.E))
+    dropdown.grid(row=6 + i, column=1, sticky=(tk.W, tk.E))
     session_dropdowns.append(dropdown)
 
-# Create result labels with text wrap
+# Result labels
 result_label = ttk.Label(mainframe, text="", wraplength=300)
 path_label = ttk.Label(mainframe, text="", wraplength=300)
+time_label = ttk.Label(mainframe, text="Elapsed Time: Not measured yet")
+memory_label = ttk.Label(mainframe, text="Peak Memory Usage: Not measured yet")
 
 # Button to trigger the navigation
 find_route_button = ttk.Button(mainframe, text="Start navigation through sessions", command=find_path)
@@ -767,8 +920,10 @@ start_node_dropdown.grid(row=2, column=1, sticky=(tk.W, tk.E))
 end_node_label.grid(row=3, column=0, sticky=tk.W)
 end_node_dropdown.grid(row=3, column=1, sticky=(tk.W, tk.E))
 find_route_button.grid(row=4, column=0, columnspan=2, pady=(10, 0))
-result_label.grid(row=12 + len(session_dropdowns), column=0, columnspan=2, pady=(10, 0))
-path_label.grid(row=13 + len(session_dropdowns), column=0, columnspan=2, pady=(10, 0))
+result_label.grid(row=7 + len(session_to_node), column=0, columnspan=2, pady=(10, 0))
+path_label.grid(row=8 + len(session_to_node), column=0, columnspan=2, pady=(10, 0))
+time_label.grid(row=9 + len(session_to_node), column=0, columnspan=2, pady=(10, 0))
+memory_label.grid(row=10 + len(session_to_node), column=0, columnspan=2, pady=(10, 0))
 
 # Run the Tkinter event loop
 root.mainloop()
